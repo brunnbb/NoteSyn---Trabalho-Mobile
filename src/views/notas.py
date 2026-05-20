@@ -148,10 +148,6 @@ def view_notas(page: ft.Page, p: dict) -> ft.Container:
         - Limpa todos os controls
         - Recria cada card manualmente
         - Atualiza a página
-
-        Trade-off:
-        - Simples de implementar
-        - Menos eficiente para grandes volumes de dados
         """
         lista_notas.controls.clear()
 

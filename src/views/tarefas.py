@@ -21,17 +21,6 @@ def view_tarefas(page: ft.Page, p: dict) -> ft.Container:
     - Exibir métricas derivadas (total, concluídas, pendentes)
     - Renderizar lista com feedback visual por prioridade e status
 
-    Características arquiteturais:
-    - Estado global mutável (dados_tarefas)
-    - Estado local para edição e data selecionada
-    - Renderização manual (rebuild completo da lista)
-    - UI não reativa automaticamente (uso explícito de page.update)
-
-    Observações importantes:
-    - Datas são armazenadas como string (acoplamento com formatação)
-    - IDs são incrementais em memória (sem persistência)
-    - Atualizações de stats dependem de chamada manual
-
     Parâmetros:
     - page: instância da página Flet (render e notificações)
     - p: dicionário de tema (cores)
@@ -92,10 +81,6 @@ def view_tarefas(page: ft.Page, p: dict) -> ft.Container:
     def atualizar_data(e):
         """
         Atualiza manualmente a data selecionada no DatePicker.
-
-        Observação:
-        - Flet não faz binding automático aqui
-        - Precisamos sincronizar manualmente UI + estado
         """
         nonlocal data_selecionada
         if data_picker.value:
@@ -204,8 +189,6 @@ def view_tarefas(page: ft.Page, p: dict) -> ft.Container:
         - Recria cada item manualmente
         - Força render com page.update()
 
-        Trade-off:
-        - Simples, porém O(n) a cada atualização
         """
         atualizar_stats()
         lista_tarefas.controls.clear()
