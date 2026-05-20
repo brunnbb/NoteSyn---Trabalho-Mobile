@@ -1,0 +1,51 @@
+# ==============================================================================
+# core/theme.py
+# Centraliza a definição de cores e temas (Claro e Escuro).
+# ==============================================================================
+
+PALETAS = {
+    "escuro": {
+        "bg_page": "#0f0f1e",
+        "bg_sidebar": "#16162a",
+        "bg_card": "#1d1d35",
+        "bg_card_blue": "#1a233d",
+        "bg_card_green": "#162e2a",
+        "bg_menu_ativo": "#6c5ce7",
+        "txt_titulo": "#ffffff",
+        "txt_subtitulo": "#a0a0c0",
+        "txt_menu_normal": "#a0a0c0",
+        "txt_card_valor": "#ffffff",
+        "txt_card_label": "#8e8ea8",
+        "txt_divider": "#252545",
+        "borda_padrao": "#2c2c54",
+        "borda_sidebar": "#252545",
+        "borda_blue": "#00a8ff",
+        "borda_green": "#00cc88",
+        "borda_red": "#ff4d4d",
+        "borda_dica": "#ffaa00",
+        "icone_menu_norm": "#8e8ea8",
+        "sombra": "#000000",
+    },
+    "claro": {
+        "bg_page": "#f5f6fa",
+        "bg_sidebar": "#ffffff",
+        "bg_card": "#ffffff",
+        "bg_card_blue": "#e1f5fe",
+        "bg_card_green": "#e8f5e9",
+        "bg_menu_ativo": "#6c5ce7",
+        "txt_titulo": "#2c3e50",
+        "txt_subtitulo": "#7f8c8d",
+        "txt_menu_normal": "#7f8c8d",
+        "txt_card_valor": "#2c3e50",
+        "txt_card_label": "#95a5a6",
+        "txt_divider": "#ecf0f1",
+        "borda_padrao": "#dcdde1",
+        "borda_sidebar": "#f1f2f6",
+        "borda_blue": "#2980b9",
+        "borda_green": "#27ae60",
+        "borda_red": "#c0392b",
+        "borda_dica": "#f39c12",
+        "icone_menu_norm": "#7f8c8d",
+        "sombra": "#dcdde1",
+    },
+}
