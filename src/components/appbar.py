@@ -14,7 +14,15 @@ def construir_appbar(
     page: ft.Page, p: dict, alternar_tema_callback, navegar_callback
 ) -> ft.AppBar:
     """
-    Constrói a AppBar. O parâmetro 'p' é o dicionário de cores (tema ativo).
+    Constrói e retorna um componente ft.AppBar.
+    Parâmetros:
+    - page: instância da página Flet (necessária para abrir dialogs)
+    - p: dicionário de tema contendo cores atuais (ex: bg_sidebar, txt_titulo)
+    - alternar_tema_callback: função responsável por alternar entre temas
+    - navegar_callback: função de navegação entre rotas
+
+    Retorno:
+    - ft.AppBar representando a barra de navegação superior
     """
     return ft.AppBar(
         # O 'leading' é exibido apenas no modo mobile para abrir o menu lateral

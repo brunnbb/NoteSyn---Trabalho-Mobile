@@ -9,7 +9,16 @@ from src.core.utils import border_all
 
 
 def menu_lateral(p: dict, navegar_callback) -> ft.Container:
-    """Menu lateral com navegação por rotas."""
+    """
+    Constrói o menu lateral (sidebar).
+
+    Parâmetros:
+    - p: dicionário de tema (cores dinâmicas)
+    - navegar_callback: função responsável por troca de rotas
+
+    Retorno:
+    - ft.Container representando a sidebar completa
+    """
 
     def criar_item_menu(icone: ft.IconData, rotulo: str, rota: str) -> ft.Container:
         """Helper para criar itens de navegação consistentes."""

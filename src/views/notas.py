@@ -2,6 +2,7 @@
 # views/notas.py
 # Interface de CRUD para anotações.
 # ==============================================================================
+
 from datetime import datetime
 
 import flet as ft
@@ -11,8 +12,29 @@ from src.core.utils import border_all, exibir_notificacao
 
 
 def view_notas(page: ft.Page, p: dict) -> ft.Container:
+    """
+    Constrói a tela de gerenciamento de notas (CRUD completo).
+
+    Responsabilidades:
+    - Criar novas notas
+    - Editar notas existentes
+    - Remover notas
+    - Listar todas as notas com feedback visual
+
+    Parâmetros:
+    - page: instância da página Flet (necessária para update/notificações)
+    - p: dicionário de tema (cores e estilos)
+
+    Retorna:
+    - ft.Container com toda a interface da view de notas
+    """
+
+    # Controla se estamos criando (None) ou editando uma nota existente
     nota_id_em_edicao = None
 
+    # ---------------------- FORMULÁRIO ----------------------
+
+    # Campo de título da nota
     titulo_input = ft.TextField(
         label="Título da Nota",
         prefix_icon=ft.Icons.TITLE,
@@ -22,6 +44,7 @@ def view_notas(page: ft.Page, p: dict) -> ft.Container:
         width=400,
     )
 
+    # Campo de conteúdo (multilinha)
     conteudo_input = ft.TextField(
         label="Conteúdo",
         prefix_icon=ft.Icons.DESCRIPTION,
@@ -34,6 +57,7 @@ def view_notas(page: ft.Page, p: dict) -> ft.Container:
         width=400,
     )
 
+    # Seleção de categoria (valor influencia cor do card)
     categoria_dropdown = ft.Dropdown(
         label="Categoria",
         width=200,
@@ -49,6 +73,7 @@ def view_notas(page: ft.Page, p: dict) -> ft.Container:
         label_style=ft.TextStyle(color=p["txt_card_label"]),
     )
 
+    # Flag booleana para destaque visual
     importante_switch = ft.Switch(
         label="Marcar como importante",
         value=False,
@@ -56,6 +81,7 @@ def view_notas(page: ft.Page, p: dict) -> ft.Container:
         label_text_style=ft.TextStyle(color=p["txt_card_valor"]),
     )
 
+    # Botão alterna dinamicamente entre criar e editar
     btn_salvar = ft.FilledButton(
         "Salvar Nota",
         icon=ft.Icons.SAVE,
@@ -64,35 +90,73 @@ def view_notas(page: ft.Page, p: dict) -> ft.Container:
         on_click=lambda e: salvar_nota(e),
     )
 
+    # Lista renderizada manualmente (sem binding automático)
     lista_notas = ft.Column(spacing=10)
 
+    # ---------------------- AÇÕES ----------------------
+
     def carregar_nota_para_edicao(nota: dict):
+        """
+        Preenche o formulário com dados existentes e ativa modo edição.
+
+        Efeitos:
+        - Atualiza campos do formulário
+        - Define ID em edição
+        - Altera botão para modo "Atualizar"
+        """
         nonlocal nota_id_em_edicao
         nota_id_em_edicao = nota["id"]
+
         titulo_input.value = nota["titulo"]
         conteudo_input.value = nota["conteudo"]
         categoria_dropdown.value = nota["categoria"]
         importante_switch.value = nota["importante"]
+
+        # Feedback visual de edição
         btn_salvar.content = "Atualizar Nota"
         btn_salvar.icon = ft.Icons.EDIT
         btn_salvar.bgcolor = p["borda_dica"]
+
         page.update()
 
     def limpar_formulario_nota():
+        """
+        Reseta o formulário para o estado inicial (modo criação).
+
+        Efeitos:
+        - Limpa inputs
+        - Reseta estado de edição
+        - Restaura botão padrão
+        """
         nonlocal nota_id_em_edicao
         nota_id_em_edicao = None
+
         titulo_input.value = ""
         conteudo_input.value = ""
         categoria_dropdown.value = "pessoal"
         importante_switch.value = False
+
         btn_salvar.content = "Salvar Nota"
         btn_salvar.icon = ft.Icons.SAVE
         btn_salvar.bgcolor = p["borda_blue"]
 
     def atualizar_lista_notas():
+        """
+        Reconstrói completamente a lista de notas.
+
+        Estratégia:
+        - Limpa todos os controls
+        - Recria cada card manualmente
+        - Atualiza a página
+
+        Trade-off:
+        - Simples de implementar
+        - Menos eficiente para grandes volumes de dados
+        """
         lista_notas.controls.clear()
 
         for nota in dados_notas:
+            # Cor derivada da categoria (mapeamento manual)
             categoria_color = {
                 "trabalho": p["borda_red"],
                 "pessoal": p["borda_blue"],
@@ -100,6 +164,7 @@ def view_notas(page: ft.Page, p: dict) -> ft.Container:
                 "importante": p["borda_dica"],
             }.get(nota["categoria"], p["borda_padrao"])
 
+            # IMPORTANTE: uso de default args evita bug de late binding em lambdas
             card_controls: list[ft.Control] = [
                 ft.Row(
                     [
@@ -161,7 +226,9 @@ def view_notas(page: ft.Page, p: dict) -> ft.Container:
                 ft.Row(
                     [
                         ft.Text(
-                            f"📅 {nota['data']}", size=9, color=p["txt_card_label"]
+                            f"📅 {nota['data']}",
+                            size=9,
+                            color=p["txt_card_label"],
                         ),
                         ft.Text(
                             f"📌 {nota['categoria'].upper()}",
@@ -180,19 +247,33 @@ def view_notas(page: ft.Page, p: dict) -> ft.Container:
                 border=border_all(1, categoria_color),
                 border_radius=8,
             )
+
             lista_notas.controls.append(nota_card)
 
         page.update()
 
     def salvar_nota(e):
+        """
+        Cria ou atualiza uma nota.
+
+        Fluxo:
+        - Valida campos obrigatórios
+        - Decide entre CREATE ou UPDATE
+        - Atualiza estado global
+        - Re-renderiza lista
+        """
         nonlocal nota_id_em_edicao
+
         if not titulo_input.value or not conteudo_input.value:
             exibir_notificacao(
-                page, "Preencha o título e o conteúdo da nota!", sucesso=False
+                page,
+                "Preencha o título e o conteúdo da nota!",
+                sucesso=False,
             )
             return
 
         if nota_id_em_edicao is not None:
+            # UPDATE (mutação direta)
             for nota in dados_notas:
                 if nota["id"] == nota_id_em_edicao:
                     nota["titulo"] = titulo_input.value
@@ -200,8 +281,10 @@ def view_notas(page: ft.Page, p: dict) -> ft.Container:
                     nota["categoria"] = categoria_dropdown.value or "pessoal"
                     nota["importante"] = importante_switch.value
                     break
+
             exibir_notificacao(page, "Nota atualizada com sucesso!")
         else:
+            # CREATE (ID incremental simples)
             nova_nota = {
                 "id": max([n["id"] for n in dados_notas], default=0) + 1,
                 "titulo": titulo_input.value,
@@ -211,6 +294,7 @@ def view_notas(page: ft.Page, p: dict) -> ft.Container:
                 "importante": importante_switch.value,
                 "tags": [],
             }
+
             dados_notas.append(nova_nota)
             exibir_notificacao(page, "Nova nota criada com sucesso!")
 
@@ -218,14 +302,25 @@ def view_notas(page: ft.Page, p: dict) -> ft.Container:
         atualizar_lista_notas()
 
     def deletar_nota(nota_id):
-        # Substitui a lista via slice para não perder referência na memória
+        """
+        Remove uma nota pelo ID.
+
+        Detalhe importante:
+        - Usa slice assignment para manter referência da lista
+        """
         dados_notas[:] = [n for n in dados_notas if n["id"] != nota_id]
+
         exibir_notificacao(page, "Nota excluída.")
+
         if nota_id_em_edicao == nota_id:
             limpar_formulario_nota()
+
         atualizar_lista_notas()
 
+    # Render inicial
     atualizar_lista_notas()
+
+    # ---------------------- LAYOUT ----------------------
 
     form_controls: list[ft.Control] = [
         ft.Text(
@@ -240,7 +335,10 @@ def view_notas(page: ft.Page, p: dict) -> ft.Container:
         ft.Row(
             [
                 btn_salvar,
-                ft.TextButton("Cancelar", on_click=lambda e: limpar_formulario_nota()),
+                ft.TextButton(
+                    "Cancelar",
+                    on_click=lambda e: limpar_formulario_nota(),
+                ),
             ],
             spacing=10,
         ),
@@ -262,15 +360,20 @@ def view_notas(page: ft.Page, p: dict) -> ft.Container:
             border_radius=10,
         ),
         ft.Divider(height=20, color=p["txt_divider"]),
+        # Valor calculado em tempo de render (não reativo automaticamente)
         ft.Text(
-            f"Total de Notas: {len(dados_notas)}", size=12, color=p["txt_subtitulo"]
+            f"Total de Notas: {len(dados_notas)}",
+            size=12,
+            color=p["txt_subtitulo"],
         ),
         lista_notas,
     ]
 
     return ft.Container(
         content=ft.Column(
-            controls=main_controls, spacing=15, scroll=ft.ScrollMode.AUTO
+            controls=main_controls,
+            spacing=15,
+            scroll=ft.ScrollMode.AUTO,
         ),
         padding=20,
         bgcolor=p["bg_page"],
