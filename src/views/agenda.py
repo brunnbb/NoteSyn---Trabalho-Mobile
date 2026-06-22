@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 
 import flet as ft
 
-from src.core.state import dados_notas, dados_tarefas
+from src.core import database as db
 from src.core.utils import border_all
 
 
@@ -57,9 +57,12 @@ def view_agenda(page: ft.Page, p: dict) -> ft.Container:
 
         agenda_container.controls.clear()
 
-        # Valor do slider define o range da agenda
         dias_mostrar = int(dias_slider.value) if dias_slider.value else 7
         hoje = datetime.now()
+
+        # Busca dados frescos do banco a cada atualização da agenda
+        todas_tarefas = db.listar_tarefas()
+        todas_notas = db.listar_notas()
 
         for i in range(dias_mostrar):
             # Calcula a data atual da iteração
@@ -72,8 +75,8 @@ def view_agenda(page: ft.Page, p: dict) -> ft.Container:
             ]
 
             # Filtragem baseada em string → acoplamento com formato de data
-            tarefas_dia = [t for t in dados_tarefas if t["data_vencimento"] == data_str]
-            notas_dia = [n for n in dados_notas if n["data"] == data_str]
+            tarefas_dia = [t for t in todas_tarefas if t["data_vencimento"] == data_str]
+            notas_dia = [n for n in todas_notas if n["data"] == data_str]
 
             # Container dos eventos do dia
             eventos_dia = ft.Column(spacing=5)

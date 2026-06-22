@@ -5,7 +5,8 @@
 
 import flet as ft
 
-from src.core.state import dados_notas, dados_tarefas, estado
+from src.core import database as db
+from src.core.state import estado
 from src.core.utils import border_all, controls_list
 
 
@@ -27,34 +28,23 @@ def view_home(p: dict) -> ft.Container:
 
     # ---------------------- MÉTRICAS ----------------------
 
-    # Cálculos diretos a partir do estado global
-    total_notas = len(dados_notas)
-    total_tarefas = len(dados_tarefas)
+    # Busca dados do banco (snapshot no momento do render)
+    todas_notas = db.listar_notas()
+    todas_tarefas = db.listar_tarefas()
 
-    tarefas_pendentes = sum(1 for t in dados_tarefas if not t["concluida"])
-    tarefas_concluidas = sum(1 for t in dados_tarefas if t["concluida"])
+    total_notas = len(todas_notas)
+    total_tarefas = len(todas_tarefas)
 
-    # Percentual de progresso (proteção contra divisão por zero)
+    tarefas_pendentes = sum(1 for t in todas_tarefas if not t["concluida"])
+    tarefas_concluidas = sum(1 for t in todas_tarefas if t["concluida"])
+
     progresso = (tarefas_concluidas / total_tarefas * 100) if total_tarefas > 0 else 0
 
     def criar_card_estatistica(
         titulo: str, valor: str, icone: ft.IconData, cor: str
     ) -> ft.Container:
-        """
-        Cria um card visual padronizado para métricas.
-
-        Parâmetros:
-        - titulo: rótulo da métrica
-        - valor: valor exibido
-        - icone: ícone representativo
-        - cor: cor de destaque (borda/ícone)
-
-        Retorna:
-        - ft.Container estilizado com layout consistente
-        """
         return ft.Container(
             content=ft.Column(
-                # controls_list provavelmente normaliza lista de controls (helper interno)
                 controls_list(
                     ft.Icon(icone, size=32, color=cor),
                     ft.Text(titulo, size=12, color=p["txt_card_label"]),
@@ -104,12 +94,11 @@ def view_home(p: dict) -> ft.Container:
             ),
         ],
         spacing=15,
-        wrap=True,  # Permite responsividade em telas menores
+        wrap=True,
     )
 
     # ---------------------- PROGRESSO ----------------------
 
-    # Slider usado apenas como indicador visual (disabled)
     progresso_slider = ft.Slider(
         min=0,
         max=100,
@@ -137,7 +126,6 @@ def view_home(p: dict) -> ft.Container:
         ),
     ]
 
-    # Container isolado para a seção de progresso
     secao_progresso = ft.Container(
         content=ft.Column(controls=progresso_controls, spacing=10),
         padding=20,
@@ -150,8 +138,8 @@ def view_home(p: dict) -> ft.Container:
 
     ultimas_notas = ft.Column(spacing=10)
 
-    # Slice limita a 3 itens (ordem depende do estado atual)
-    for nota in dados_notas[:3]:
+    # As notas já vêm ordenadas por id DESC do banco (mais recentes primeiro)
+    for nota in todas_notas[:3]:
         nota_controls: list[ft.Control] = [
             ft.Row(
                 [
@@ -162,7 +150,6 @@ def view_home(p: dict) -> ft.Container:
                         color=p["txt_card_valor"],
                     ),
                     ft.Icon(
-                        # Destaque visual para notas importantes
                         ft.Icons.STAR if nota["importante"] else ft.Icons.STAR_OUTLINE,
                         size=16,
                         color=p["borda_dica"]
@@ -173,7 +160,6 @@ def view_home(p: dict) -> ft.Container:
                 spacing=10,
             ),
             ft.Text(
-                # Truncamento manual de conteúdo
                 nota["conteudo"][:60] + "..."
                 if len(nota["conteudo"]) > 60
                 else nota["conteudo"],
@@ -201,7 +187,6 @@ def view_home(p: dict) -> ft.Container:
 
     home_controls: list[ft.Control] = [
         ft.Text(
-            # Dependência direta do estado global
             f"Bem-vindo, {estado['usuario']}! 👋",
             size=24,
             weight=ft.FontWeight.BOLD,
@@ -228,12 +213,11 @@ def view_home(p: dict) -> ft.Container:
         ultimas_notas,
     ]
 
-    # Container raiz da página
     return ft.Container(
         content=ft.Column(
             controls=home_controls,
             spacing=15,
-            scroll=ft.ScrollMode.AUTO,  # Permite scroll vertical
+            scroll=ft.ScrollMode.AUTO,
         ),
         padding=20,
         bgcolor=p["bg_page"],

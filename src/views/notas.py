@@ -1,13 +1,11 @@
 # ==============================================================================
 # views/notas.py
-# Interface de CRUD para anotações.
+# Interface de CRUD para anotações — dados persistidos via SQLite.
 # ==============================================================================
-
-from datetime import datetime
 
 import flet as ft
 
-from src.core.state import dados_notas
+from src.core import database as db
 from src.core.utils import border_all, exibir_notificacao
 
 
@@ -34,7 +32,6 @@ def view_notas(page: ft.Page, p: dict) -> ft.Container:
 
     # ---------------------- FORMULÁRIO ----------------------
 
-    # Campo de título da nota
     titulo_input = ft.TextField(
         label="Título da Nota",
         prefix_icon=ft.Icons.TITLE,
@@ -44,7 +41,6 @@ def view_notas(page: ft.Page, p: dict) -> ft.Container:
         width=400,
     )
 
-    # Campo de conteúdo (multilinha)
     conteudo_input = ft.TextField(
         label="Conteúdo",
         prefix_icon=ft.Icons.DESCRIPTION,
@@ -57,7 +53,6 @@ def view_notas(page: ft.Page, p: dict) -> ft.Container:
         width=400,
     )
 
-    # Seleção de categoria (valor influencia cor do card)
     categoria_dropdown = ft.Dropdown(
         label="Categoria",
         width=200,
@@ -73,7 +68,6 @@ def view_notas(page: ft.Page, p: dict) -> ft.Container:
         label_style=ft.TextStyle(color=p["txt_card_label"]),
     )
 
-    # Flag booleana para destaque visual
     importante_switch = ft.Switch(
         label="Marcar como importante",
         value=False,
@@ -81,7 +75,6 @@ def view_notas(page: ft.Page, p: dict) -> ft.Container:
         label_text_style=ft.TextStyle(color=p["txt_card_valor"]),
     )
 
-    # Botão alterna dinamicamente entre criar e editar
     btn_salvar = ft.FilledButton(
         "Salvar Nota",
         icon=ft.Icons.SAVE,
@@ -90,20 +83,11 @@ def view_notas(page: ft.Page, p: dict) -> ft.Container:
         on_click=lambda e: salvar_nota(e),
     )
 
-    # Lista renderizada manualmente (sem binding automático)
     lista_notas = ft.Column(spacing=10)
 
     # ---------------------- AÇÕES ----------------------
 
     def carregar_nota_para_edicao(nota: dict):
-        """
-        Preenche o formulário com dados existentes e ativa modo edição.
-
-        Efeitos:
-        - Atualiza campos do formulário
-        - Define ID em edição
-        - Altera botão para modo "Atualizar"
-        """
         nonlocal nota_id_em_edicao
         nota_id_em_edicao = nota["id"]
 
@@ -112,7 +96,6 @@ def view_notas(page: ft.Page, p: dict) -> ft.Container:
         categoria_dropdown.value = nota["categoria"]
         importante_switch.value = nota["importante"]
 
-        # Feedback visual de edição
         btn_salvar.content = "Atualizar Nota"
         btn_salvar.icon = ft.Icons.EDIT
         btn_salvar.bgcolor = p["borda_dica"]
@@ -120,14 +103,6 @@ def view_notas(page: ft.Page, p: dict) -> ft.Container:
         page.update()
 
     def limpar_formulario_nota():
-        """
-        Reseta o formulário para o estado inicial (modo criação).
-
-        Efeitos:
-        - Limpa inputs
-        - Reseta estado de edição
-        - Restaura botão padrão
-        """
         nonlocal nota_id_em_edicao
         nota_id_em_edicao = None
 
@@ -142,17 +117,12 @@ def view_notas(page: ft.Page, p: dict) -> ft.Container:
 
     def atualizar_lista_notas():
         """
-        Reconstrói completamente a lista de notas.
-
-        Estratégia:
-        - Limpa todos os controls
-        - Recria cada card manualmente
-        - Atualiza a página
+        Busca todas as notas do banco e reconstrói a lista.
         """
+        notas = db.listar_notas()
         lista_notas.controls.clear()
 
-        for nota in dados_notas:
-            # Cor derivada da categoria (mapeamento manual)
+        for nota in notas:
             categoria_color = {
                 "trabalho": p["borda_red"],
                 "pessoal": p["borda_blue"],
@@ -160,7 +130,6 @@ def view_notas(page: ft.Page, p: dict) -> ft.Container:
                 "importante": p["borda_dica"],
             }.get(nota["categoria"], p["borda_padrao"])
 
-            # IMPORTANTE: uso de default args evita bug de late binding em lambdas
             card_controls: list[ft.Control] = [
                 ft.Row(
                     [
@@ -209,7 +178,7 @@ def view_notas(page: ft.Page, p: dict) -> ft.Container:
                                     icon=ft.Icons.DELETE_OUTLINE,
                                     icon_color=p["borda_red"],
                                     tooltip="Deletar nota",
-                                    on_click=lambda e, nid=nota["id"]: deletar_nota(
+                                    on_click=lambda e, nid=nota["id"]: _deletar_nota(
                                         nid
                                     ),
                                 ),
@@ -249,15 +218,6 @@ def view_notas(page: ft.Page, p: dict) -> ft.Container:
         page.update()
 
     def salvar_nota(e):
-        """
-        Cria ou atualiza uma nota.
-
-        Fluxo:
-        - Valida campos obrigatórios
-        - Decide entre CREATE ou UPDATE
-        - Atualiza estado global
-        - Re-renderiza lista
-        """
         nonlocal nota_id_em_edicao
 
         if not titulo_input.value or not conteudo_input.value:
@@ -269,43 +229,30 @@ def view_notas(page: ft.Page, p: dict) -> ft.Container:
             return
 
         if nota_id_em_edicao is not None:
-            # UPDATE (mutação direta)
-            for nota in dados_notas:
-                if nota["id"] == nota_id_em_edicao:
-                    nota["titulo"] = titulo_input.value
-                    nota["conteudo"] = conteudo_input.value
-                    nota["categoria"] = categoria_dropdown.value or "pessoal"
-                    nota["importante"] = importante_switch.value
-                    break
-
+            # UPDATE no banco
+            db.atualizar_nota(
+                nota_id=nota_id_em_edicao,
+                titulo=titulo_input.value,
+                conteudo=conteudo_input.value,
+                categoria=categoria_dropdown.value or "pessoal",
+                importante=importante_switch.value,
+            )
             exibir_notificacao(page, "Nota atualizada com sucesso!")
         else:
-            # CREATE (ID incremental simples)
-            nova_nota = {
-                "id": max([n["id"] for n in dados_notas], default=0) + 1,
-                "titulo": titulo_input.value,
-                "conteudo": conteudo_input.value,
-                "data": datetime.now().strftime("%d/%m/%Y"),
-                "categoria": categoria_dropdown.value or "pessoal",
-                "importante": importante_switch.value,
-                "tags": [],
-            }
-
-            dados_notas.append(nova_nota)
+            # INSERT no banco
+            db.criar_nota(
+                titulo=titulo_input.value,
+                conteudo=conteudo_input.value,
+                categoria=categoria_dropdown.value or "pessoal",
+                importante=importante_switch.value,
+            )
             exibir_notificacao(page, "Nova nota criada com sucesso!")
 
         limpar_formulario_nota()
         atualizar_lista_notas()
 
-    def deletar_nota(nota_id):
-        """
-        Remove uma nota pelo ID.
-
-        Detalhe importante:
-        - Usa slice assignment para manter referência da lista
-        """
-        dados_notas[:] = [n for n in dados_notas if n["id"] != nota_id]
-
+    def _deletar_nota(nota_id: int):
+        db.deletar_nota(nota_id)
         exibir_notificacao(page, "Nota excluída.")
 
         if nota_id_em_edicao == nota_id:
@@ -313,10 +260,12 @@ def view_notas(page: ft.Page, p: dict) -> ft.Container:
 
         atualizar_lista_notas()
 
-    # Render inicial
+    # Render inicial a partir do banco
     atualizar_lista_notas()
 
     # ---------------------- LAYOUT ----------------------
+
+    notas = db.listar_notas()
 
     form_controls: list[ft.Control] = [
         ft.Text(
@@ -356,9 +305,8 @@ def view_notas(page: ft.Page, p: dict) -> ft.Container:
             border_radius=10,
         ),
         ft.Divider(height=20, color=p["txt_divider"]),
-        # Valor calculado em tempo de render (não reativo automaticamente)
         ft.Text(
-            f"Total de Notas: {len(dados_notas)}",
+            f"Total de Notas: {len(notas)}",
             size=12,
             color=p["txt_subtitulo"],
         ),

@@ -55,7 +55,7 @@ uv sync
 # Ativar (Windows)
 .\venv\Scripts\activate
 # Ativar (Linux/macOS)
-source venv/bin/activate
+source ./venv/bin/activate
 
 ```
 
@@ -68,7 +68,7 @@ python -m venv venv
 # Ativar (Windows)
 .\venv\Scripts\activate
 # Ativar (Linux/macOS)
-source venv/bin/activate
+source ./venv/bin/activate
 
 # Instalar dependências
 pip install -r requirements.txt

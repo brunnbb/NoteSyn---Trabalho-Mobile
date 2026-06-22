@@ -7,6 +7,7 @@ import flet as ft
 from src.components.appbar import construir_appbar
 from src.components.sidebar import menu_lateral
 from src.core.constants import APP_NAME, BREAKPOINT_MOBILE
+from src.core.database import inicializar_banco
 from src.core.state import estado
 from src.core.theme import PALETAS
 from src.core.utils import controls_list
@@ -100,4 +101,5 @@ def main(page: ft.Page):
 
 
 if __name__ == "__main__":
+    inicializar_banco()
     ft.run(main)
