@@ -465,12 +465,22 @@ def view_home(page: ft.Page, p: dict) -> ft.Container:
                     [secao_resumo, secao_progresso],
                     spacing=20,
                     vertical_alignment=ft.CrossAxisAlignment.START,
+                )
+                if not estado["mobile"]
+                else ft.Column(
+                    [secao_resumo, secao_progresso],
+                    spacing=20,
                 ),
                 ft.Divider(height=20, color=p["txt_divider"]),
                 ft.Row(
                     [secao_notas, secao_clima],
                     spacing=20,
                     vertical_alignment=ft.CrossAxisAlignment.START,
+                )
+                if not estado["mobile"]
+                else ft.Column(
+                    [secao_notas, secao_clima],
+                    spacing=20,
                 ),
             ],
             spacing=15,
