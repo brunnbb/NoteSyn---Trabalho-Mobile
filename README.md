@@ -1,99 +1,88 @@
-Aqui está o seu arquivo README.md completado e organizado, com as explicações da estrutura e os comandos necessários para cada gerenciador.
-
----
-
 # NoteSyn
 
-O **NoteSyn** é um aplicativo de gerenciamento de notas, tarefas e agenda, desenvolvido com Python e Flet.
+Aplicativo de gerenciamento pessoal desenvolvido com **Python** e **Flet**, com persistência de dados em **SQLite**. Permite criar e organizar notas, tarefas e visualizar uma agenda, tudo em uma interface responsiva que se adapta a dispositivos móveis e desktop.
 
-### Requisitos
+## Funcionalidades
 
-* Python 3.12+
-* [`uv`](https://docs.astral.sh/uv/) (Recomendado)
+- **Notas** — criação, edição e exclusão de notas com suporte a **Markdown**
+- **Tarefas** — CRUD completo com prioridade, data de vencimento e controle de conclusão
+- **Agenda** — visualização de notas e tarefas organizadas por data
+- **Widget de clima** — exibe condições climáticas atuais via [Open-Meteo](https://open-meteo.com/) (sem API key), com cidade configurável e cache de 30 minutos
+- **Temas** — alternância entre modo claro e escuro
+- **Responsividade** — layout adaptado para mobile e desktop
+- **Persistência** — todos os dados (notas, tarefas, configurações, cache de clima) são salvos em `~/.notesyn/notesyn.db`
 
-## Estrutura do Projeto
+## Requisitos
 
-```text
-NoteSyn/
-├── src/                    # Pasta do código-fonte dos itens da aplicação
-│   ├── components/         # Componentes de interface reutilizáveis
-│   │   ├── appbar.py       # Barra de navegação superior
-│   │   └── sidebar.py      # Menu lateral de navegação
-│   ├── core/               # Lógica central e configurações globais
-│   │   ├── constants.py    # Constantes do sistema
-│   │   ├── state.py        # Estado global e gerenciamento de dados
-│   │   ├── theme.py        # Definições de paletas de cores e temas
-│   │   └── utils.py        # Funções auxiliares e utilitários
-│   ├── views/              # Telas (páginas) do aplicativo
-│   │   ├── agenda.py       # Visualização da agenda
-│   │   ├── config.py       # Tela de configurações
-│   │   ├── home.py         # Dashboard principal
-│   │   ├── notas.py        # Gerenciamento de notas
-│   │   └── tarefas.py      # Gerenciamento de tarefas
-│   └── __init__.py         # Torna src um pacote Python
-├── .gitignore              # Arquivos ignorados pelo Git
-├── .python-version         # Versão do Python utilizada no projeto
-├── main.py                 # Ponto de entrada (execução) do projeto
-├── pyproject.toml          # Definições do projeto e dependências (uv/pip)
-├── README.md               # Documentação do projeto
-├── requirements.txt        # Lista de dependências para instalação via pip
-└── uv.lock                 # Arquivo de bloqueio de versões (uv)
+- Python 3.12+
+- [`uv`](https://docs.astral.sh/uv/) (recomendado) ou `pip`
 
-```
+## Instalação
 
-### Instalação das Dependências
-
-Para preparar o seu ambiente, escolha uma das opções abaixo:
-
-**Usando `uv` (Recomendado):**
-O `uv` é extremamente rápido e gerencia o ambiente automaticamente.
+**Com `uv` (recomendado):**
 
 ```bash
 uv sync
-
-# O uv normalmente já ativa o ambiente virtual automaticamente, mas você pode ativar manualmente se preferir
-# Ativar (Windows)
-.\venv\Scripts\activate
-# Ativar (Linux/macOS)
-source ./venv/bin/activate
-
 ```
 
-**Usando `pip` e `venv` (Tradicional):**
+**Com `pip`:**
 
 ```bash
-# Criar ambiente virtual
-python -m venv venv
+python -m venv .venv
 
-# Ativar (Windows)
-.\venv\Scripts\activate
-# Ativar (Linux/macOS)
-source ./venv/bin/activate
+# Linux/macOS
+source .venv/bin/activate
 
-# Instalar dependências
+# Windows
+.venv\Scripts\activate
+
 pip install -r requirements.txt
-
 ```
 
-## Rodando o Projeto
+## Executando
 
-Após instalar as dependências, execute o comando correspondente:
-
-* **Com `uv`:**
 ```bash
+# Com uv
 uv run flet run
-# Ou
-flet run
 
+# Com pip (ambiente virtual ativado)
+flet run
 ```
 
-* **Com `pip`:**
-```bash
-flet run
+> Execute os comandos a partir da pasta raiz do projeto.
+
+## Estrutura do Projeto
 
 ```
+NoteSyn/
+├── main.py                  # Ponto de entrada — roteamento e ciclo de vida
+├── pyproject.toml           # Metadados e dependências do projeto
+├── requirements.txt         # Dependências para instalação via pip
+└── src/
+    ├── components/
+    │   ├── appbar.py        # Barra superior com título e ações
+    │   └── sidebar.py       # Menu lateral de navegação (desktop)
+    ├── core/
+    │   ├── constants.py     # Constantes globais (breakpoints, versão)
+    │   ├── database.py      # Camada SQLite — CRUD de notas, tarefas e configurações
+    │   ├── state.py         # Estado global de UI (tema, rota, usuário)
+    │   ├── theme.py         # Paletas de cores para tema claro e escuro
+    │   ├── utils.py         # Funções auxiliares compartilhadas
+    │   └── weather.py       # Integração com a API Open-Meteo
+    └── views/
+        ├── home.py          # Dashboard — resumo, progresso e clima
+        ├── notas.py         # Gerenciamento de notas com editor Markdown
+        ├── tarefas.py       # Gerenciamento de tarefas
+        ├── agenda.py        # Visualização por data
+        └── config.py        # Configurações de perfil e tema
+```
 
-## Observações
+## Tecnologias
 
-* Certifique-se de que o seu terminal esteja na pasta raiz `NoteSyn/` antes de rodar os comandos.
-* Ainda não possui persistência de dados.
+| Tecnologia | Uso |
+|---|---|
+| [Flet](https://flet.dev/) | Framework de UI (Flutter via Python) |
+| SQLite (stdlib) | Persistência de dados local |
+| [Open-Meteo](https://open-meteo.com/) | API de clima — gratuita, sem autenticação |
+| [httpx](https://www.python-httpx.org/) | Cliente HTTP para chamadas à API |
+| asyncio (stdlib) | Busca de clima sem bloquear a UI |
