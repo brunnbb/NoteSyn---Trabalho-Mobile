@@ -7,7 +7,7 @@ Aplicativo de gerenciamento pessoal desenvolvido com **Python** e **Flet**, com 
 - **Notas** — criação, edição e exclusão de notas com suporte a **Markdown**
 - **Tarefas** — CRUD completo com prioridade, data de vencimento e controle de conclusão
 - **Agenda** — visualização de notas e tarefas organizadas por data
-- **Widget de clima** — exibe condições climáticas atuais via [Open-Meteo](https://open-meteo.com/) (sem API key), com cidade configurável e cache de 30 minutos
+- **Widget de clima** — exibe condições climáticas atuais via [Open-Meteo](https://open-meteo.com/) (sem API key), com cidade configurável e cache de 10 minutos
 - **Temas** — alternância entre modo claro e escuro
 - **Responsividade** — layout adaptado para mobile e desktop
 - **Persistência** — todos os dados (notas, tarefas, configurações, cache de clima) são salvos em `~/.notesyn/notesyn.db`

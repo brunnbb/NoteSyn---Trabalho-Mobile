@@ -3,7 +3,7 @@
 # Dashboard principal.
 #
 # ARQUITETURA DO CLIMA:
-# - Cache síncrono: se o cache for válido (<30min), os controles são populados
+# - Cache síncrono: se o cache for válido (<10min), os controles são populados
 #   ANTES da view ser retornada — sem thread, sem flash de "Carregando...".
 # - Busca assíncrona: usa page.run_task() para garantir que page.update()
 #   seja processado no event loop do Flet, evitando o bug de UI não atualizar
@@ -22,7 +22,7 @@ from src.core.state import estado
 from src.core.utils import border_all, controls_list
 
 _CIDADE_PADRAO = "Lages"
-_CACHE_TTL_MIN = 30
+_CACHE_TTL_MIN = 10
 
 
 # ==============================================================================
