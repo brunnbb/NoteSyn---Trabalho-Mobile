@@ -7,6 +7,6 @@
 estado = {
     "tema": "claro",
     "rota": "/",
-    "mobile": False,
+    "mobile": True,
     "usuario": "Bruno",
 }

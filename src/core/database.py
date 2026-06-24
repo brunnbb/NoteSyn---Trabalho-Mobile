@@ -48,7 +48,35 @@ def inicializar_banco():
                 prioridade      TEXT    NOT NULL DEFAULT 'média',
                 data_vencimento TEXT    NOT NULL
             );
+
+            CREATE TABLE IF NOT EXISTS configuracoes (
+                chave TEXT PRIMARY KEY,
+                valor TEXT NOT NULL
+            );
         """)
+
+
+# ==============================================================================
+# Configurações — chave/valor persistido
+# ==============================================================================
+
+
+def get_config(chave: str, padrao: str = "") -> str:
+    """Lê um valor de configuração. Retorna `padrao` se a chave não existir."""
+    with _get_connection() as conn:
+        row = conn.execute(
+            "SELECT valor FROM configuracoes WHERE chave = ?", (chave,)
+        ).fetchone()
+    return row["valor"] if row else padrao
+
+
+def set_config(chave: str, valor: str) -> None:
+    """Grava (INSERT OR REPLACE) um valor de configuração."""
+    with _get_connection() as conn:
+        conn.execute(
+            "INSERT OR REPLACE INTO configuracoes (chave, valor) VALUES (?, ?)",
+            (chave, valor),
+        )
 
 
 # ==============================================================================
@@ -57,6 +85,10 @@ def inicializar_banco():
 
 
 def criar_nota(titulo: str, conteudo: str, categoria: str, importante: bool) -> dict:
+    """
+    INSERT de uma nova nota.
+    Retorna a nota recém-criada como dict (com id gerado pelo banco).
+    """
     data = datetime.now().strftime("%d/%m/%Y")
     with _get_connection() as conn:
         cursor = conn.execute(
@@ -122,6 +154,10 @@ def deletar_nota(nota_id: int) -> bool:
 def criar_tarefa(
     titulo: str, descricao: str, prioridade: str, data_vencimento: str
 ) -> dict:
+    """
+    INSERT de uma nova tarefa.
+    Retorna a tarefa recém-criada como dict.
+    """
     with _get_connection() as conn:
         cursor = conn.execute(
             """

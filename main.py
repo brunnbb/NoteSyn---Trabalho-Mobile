@@ -48,7 +48,7 @@ def main(page: ft.Page):
 
         # Mapa de rotas: associa a string da rota a uma função de renderização
         views_map = {
-            "/": lambda p_dict: view_home(p_dict),
+            "/": lambda p_dict: view_home(page, p_dict),
             "/notas": lambda p_dict: view_notas(page, p_dict),
             "/tarefas": lambda p_dict: view_tarefas(page, p_dict),
             "/agenda": lambda p_dict: view_agenda(page, p_dict),
