@@ -5,15 +5,13 @@
 # ARQUITETURA DO CLIMA:
 # - Cache síncrono: se o cache for válido (<30min), os controles são populados
 #   ANTES da view ser retornada — sem thread, sem flash de "Carregando...".
-# - Busca assíncrona (thread): só ocorre quando o cache está expirado/ausente
-#   ou quando o usuário troca de cidade / força atualização.
-# - A thread escreve em controles Flet que são parte da view ATUAL. Como o Flet
-#   mantém referências por identidade de objeto, isso funciona corretamente
-#   mesmo após page.update() rebuilds parciais.
+# - Busca assíncrona: usa page.run_task() para garantir que page.update()
+#   seja processado no event loop do Flet, evitando o bug de UI não atualizar
+#   ao chamar update() de uma threading.Thread comum.
 # ==============================================================================
 
+import asyncio
 import json
-import threading
 from datetime import datetime, timedelta
 
 import flet as ft
@@ -28,7 +26,7 @@ _CACHE_TTL_MIN = 30
 
 
 # ==============================================================================
-# Helpers de cache (operações síncronas no SQLite)
+# Helpers de cache
 # ==============================================================================
 
 
@@ -268,8 +266,8 @@ def view_home(page: ft.Page, p: dict) -> ft.Container:
     # ------------------------------------------------------------------ clima
     cidade_salva = db.get_config("cidade_clima", _CIDADE_PADRAO)
 
-    # Determina o estado inicial dos controles de clima ANTES de montar a view.
-    # Se o cache for válido, popula com os dados salvos — sem "Carregando...".
+    # Popula os valores iniciais de forma síncrona a partir do cache.
+    # Isso evita o flash de "Carregando..." ao trocar de página/tema.
     _cache_inicial = _carregar_cache() if _cache_valido() else None
 
     if _cache_inicial:
@@ -310,30 +308,29 @@ def view_home(page: ft.Page, p: dict) -> ft.Container:
         color=p["txt_card_valor"],
         label_style=ft.TextStyle(color=p["txt_card_label"]),
         visible=False,
-        on_submit=lambda e: _confirmar_cidade(e),
+        on_submit=lambda e: page.run_task(_confirmar_cidade),
     )
     btn_confirmar = ft.IconButton(
         icon=ft.Icons.CHECK_CIRCLE_OUTLINE,
         icon_color=p["borda_green"],
         tooltip="Confirmar cidade",
         visible=False,
-        on_click=lambda e: _confirmar_cidade(e),
+        on_click=lambda e: page.run_task(_confirmar_cidade),
     )
     btn_editar = ft.IconButton(
         icon=ft.Icons.EDIT_LOCATION_ALT_OUTLINED,
         icon_color=p["borda_blue"],
         tooltip="Alterar cidade",
-        on_click=lambda e: _mostrar_input(),
+        on_click=lambda e: page.run_task(_mostrar_input),
     )
     btn_refresh = ft.IconButton(
         icon=ft.Icons.REFRESH,
         icon_color=p["txt_card_label"],
         tooltip="Forçar atualização",
-        on_click=lambda e: _forcar_busca(),
+        on_click=lambda e: page.run_task(_forcar_busca),
     )
 
     def _aplicar(dados: dict, nome: str):
-        """Preenche os controles — pode ser chamado de qualquer thread."""
         txt_cidade_nome.value = nome
         txt_emoji.value = dados["emoji"]
         txt_temp.value = f"{dados['temperatura']}°C"
@@ -344,13 +341,13 @@ def view_home(page: ft.Page, p: dict) -> ft.Container:
         txt_cache_info.value = _label_cache()
         txt_erro.value = ""
 
-    def _mostrar_input():
+    async def _mostrar_input():
         cidade_input.visible = True
         btn_confirmar.visible = True
         btn_editar.visible = False
         page.update()
 
-    def _confirmar_cidade(e):
+    async def _confirmar_cidade():
         nova = (cidade_input.value or "").strip()
         if not nova:
             return
@@ -366,19 +363,24 @@ def view_home(page: ft.Page, p: dict) -> ft.Container:
 
         db.set_config("cidade_clima", nova)
         db.set_config("clima_cache_ts", "")  # invalida cache
-        threading.Thread(target=lambda: _buscar(nova), daemon=True).start()
+        await _buscar(nova)
 
-    def _forcar_busca():
+    async def _forcar_busca():
         db.set_config("clima_cache_ts", "")
         txt_descricao.value = "Atualizando..."
         txt_cache_info.value = ""
         page.update()
         cidade = db.get_config("cidade_clima", _CIDADE_PADRAO)
-        threading.Thread(target=lambda: _buscar(cidade), daemon=True).start()
+        await _buscar(cidade)
 
-    def _buscar(cidade: str):
-        """Roda em background. Atualiza controles e chama page.update()."""
-        resultado = weather.buscar_clima_cidade(cidade)
+    async def _buscar(cidade: str):
+        """
+        Executa a chamada HTTP em uma thread de I/O separada (via asyncio.to_thread)
+        para não bloquear o event loop do Flet, e usa update_async() para garantir
+        que o render aconteça imediatamente após os dados chegarem.
+        """
+        resultado = await asyncio.to_thread(weather.buscar_clima_cidade, cidade)
+
         if resultado is None:
             txt_emoji.value = "❌"
             txt_temp.value = "--°C"
@@ -390,12 +392,14 @@ def view_home(page: ft.Page, p: dict) -> ft.Container:
             _aplicar(dados, nome)
             _salvar_cache(dados, nome)
             db.set_config("cidade_clima", nome)
+
         page.update()
 
-    # Só dispara thread se o cache estava vazio/expirado
+    # Só dispara busca se o cache estava ausente/expirado
     if _cache_inicial is None:
-        threading.Thread(target=lambda: _buscar(cidade_salva), daemon=True).start()
+        page.run_task(_buscar, cidade_salva)
 
+    # ----------------------------------------------------------------- card clima
     card_clima = ft.Container(
         content=ft.Column(
             [
@@ -457,14 +461,12 @@ def view_home(page: ft.Page, p: dict) -> ft.Container:
                     color=p["txt_titulo"],
                 ),
                 ft.Divider(height=20, color=p["txt_divider"]),
-                # Linha 1: Resumo (esquerda) | Progresso (direita)
                 ft.Row(
                     [secao_resumo, secao_progresso],
                     spacing=20,
                     vertical_alignment=ft.CrossAxisAlignment.START,
                 ),
                 ft.Divider(height=20, color=p["txt_divider"]),
-                # Linha 2: Últimas Notas (esquerda) | Clima (direita)
                 ft.Row(
                     [secao_notas, secao_clima],
                     spacing=20,

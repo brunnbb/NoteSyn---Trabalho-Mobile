@@ -1,12 +1,12 @@
 # ==============================================================================
 # core/state.py
 # Estado global de UI (tema, rota, responsividade).
-# Os dados de notas e tarefas agora vivem no SQLite (ver core/database.py).
+# O nome do usuário é carregado do banco na inicialização (ver main.py).
 # ==============================================================================
 
 estado = {
     "tema": "claro",
     "rota": "/",
     "mobile": True,
-    "usuario": "Bruno",
+    "usuario": "Usuário",
 }
